@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E0E12">
+<title>Vybe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&display=swap">
+<style>
+  /* Layout: one centered phone-width column; screens swap in place (setup, auth, profile). */
+  :root {
+    --bg: #0E0E12;
+    --card: #1A1A22;
+    --line: #2A2A35;
+    --fg: #FFFFFF;
+    --muted: #9A9AAB;
+    --accent: #7C5CFF;
+    --danger: #FF5C7A;
+    --ok: #3DDC97;
+    --font: "Sora", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.45;
+    min-height: 100vh;
+    padding-block: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  main { max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  h1.logo { color: var(--accent); font-size: 52px; font-weight: 800; letter-spacing: -0.02em; text-align: center; margin: 24px 0 0; }
+  p.tag { color: var(--muted); text-align: center; margin: 0 0 16px; }
+  h2 { font-size: 20px; margin: 8px 0 0; text-wrap: balance; }
+  p { margin: 0; }
+  label { color: var(--muted); font-size: 14px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  input, textarea {
+    width: 100%; background: var(--card); color: var(--fg); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px; font: inherit; font-size: 16px;
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  button {
+    font: inherit; font-weight: 600; color: #fff; background: var(--accent); border: 0;
+    border-radius: 12px; padding: 15px; cursor: pointer; width: 100%;
+  }
+  button[disabled] { opacity: .6; cursor: default; }
+  button.ghost { background: transparent; color: var(--muted); font-weight: 400; padding: 10px; }
+  button.danger { background: transparent; color: var(--danger); font-weight: 600; }
+  button.small { width: auto; padding: 8px 12px; font-size: 14px; background: var(--card); border: 1px solid var(--line); }
+  .msg { min-height: 20px; font-size: 14px; }
+  .msg.err { color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+  .avatar {
+    width: 96px; height: 96px; border-radius: 50%; background: var(--accent);
+    display: grid; place-items: center; font-size: 40px; font-weight: 800; margin: 24px auto 0;
+  }
+  .handle { text-align: center; font-weight: 600; font-size: 18px; margin-bottom: 8px; }
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  summary { cursor: pointer; font-weight: 600; }
+  pre {
+    margin: 12px 0; padding: 12px; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; font-size: 12px; line-height: 1.5; overflow-x: auto; max-height: 260px;
+    white-space: pre; -webkit-user-select: all; user-select: all;
+  }
+  ol.steps { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; display: flex; flex-direction: column; gap: 6px; }
+  ol.steps b { color: var(--fg); font-weight: 600; }
+  footer { display: flex; justify-content: center; margin-top: 8px; }
+  @media (prefers-reduced-motion: no-preference) {
+    section { animation: rise .25s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <!-- Screen 1: paste Supabase keys -->
+  <section id="screen-setup" hidden>
+    <h1 class="logo">Vybe</h1>
+    <p class="tag">Connect your database</p>
+
+    <ol class="steps">
+      <li>In Supabase, open <b>Project Settings &gt; API</b>.</li>
+      <li>Copy the <b>Project URL</b> and the <b>anon public</b> key.</li>
+      <li>Paste them below and tap Connect.</li>
+    </ol>
+
+    <div class="field" style="margin-top:12px">
+      <label for="in-url">Project URL</label>
+      <input id="in-url" type="url" inputmode="url" autocapitalize="none" autocomplete="off" placeholder="https://abcdxyz.supabase.co">
+    </div>
+    <div class="field">
+      <label for="in-key">Anon public key</label>
+      <input id="in-key" type="text" autocapitalize="none" autocomplete="off" placeholder="eyJhbGciOi...">
+    </div>
+    <button id="btn-connect" type="button">Connect</button>
+    <p class="msg" id="msg-setup" role="status"></p>
+
+    <details>
+      <summary>First time? Set up the database</summary>
+      <p style="color:var(--muted);font-size:14px;margin-top:10px">
+        In Supabase open <b>SQL Editor &gt; New query</b>, paste this, then tap <b>Run</b>. You only do this once.
+      </p>
+      <pre id="sql-text"></pre>
+      <button class="small" id="btn-copy-sql" type="button">Copy SQL</button>
+      <span class="msg" id="msg-copy" role="status" style="margin-left:8px"></span>
+    </details>
+  </section>
+
+  <!-- Screen 2: login / signup -->
+  <section id="screen-auth" hidden>
+    <h1 class="logo">Vybe</h1>
+    <p class="tag">Share your vibe.</p>
+    <form id="form-auth" style="display:flex;flex-direction:column;gap:12px" novalidate>
+      <div class="field" id="wrap-username" hidden>
+        <label for="in-username">Username</label>
+        <input id="in-username" type="text" autocapitalize="none" autocomplete="username" placeholder="yourname">
+      </div>
+      <div class="field">
+        <label for="in-email">Email</label>
+        <input id="in-email" type="email" autocapitalize="none" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="in-password">Password</label>
+        <input id="in-password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+      </div>
+      <button id="btn-auth" type="submit">Log in</button>
+    </form>
+    <p class="msg" id="msg-auth" role="status"></p>
+    <button class="ghost" id="btn-switch" type="button">New here? Create an account</button>
+  </section>
+
+  <!-- Screen 3: profile -->
+  <section id="screen-profile" hidden>
+    <div class="avatar" id="avatar">?</div>
+    <p class="handle" id="handle">@</p>
+    <form id="form-profile" style="display:flex;flex-direction:column;gap:12px" novalidate>
+      <div class="field">
+        <label for="p-username">Username</label>
+        <input id="p-username" type="text" autocapitalize="none" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="p-name">Full name</label>
+        <input id="p-name" type="text" placeholder="Your name">
+      </div>
+      <div class="field">
+        <label for="p-bio">Bio</label>
+        <textarea id="p-bio" maxlength="150" placeholder="Tell people about you"></textarea>
+      </div>
+      <button id="btn-save" type="submit">Save profile</button>
+    </form>
+    <p class="msg" id="msg-profile" role="status"></p>
+    <button class="danger" id="btn-logout" type="button">Log out</button>
+  </section>
+
+  <footer>
+    <button class="ghost" id="btn-reset" type="button" hidden style="width:auto">Change Supabase keys</button>
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  var SQL = `-- Run this once in Supabase: SQL Editor > New query > paste > Run
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  username text unique not null,
+  full_name text default '',
+  bio text default '',
+  avatar_url text,
+  created_at timestamptz default now()
+);
+
+alter table public.profiles enable row level security;
+
+create policy "Profiles are viewable by logged-in users"
+  on public.profiles for select
+  to authenticated
+  using (true);
+
+create policy "Users can update own profile"
+  on public.profiles for update
+  to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, username)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8))
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+`;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY_STORE = 'vybe.supabase';
+  var db = null;
+  var mode = 'login';
+  var userId = null;
+
+  function loadKeys() {
+    try { return JSON.parse(localStorage.getItem(KEY_STORE) || 'null'); } catch (e) { return null; }
+  }
+  function saveKeys(k) { try { localStorage.setItem(KEY_STORE, JSON.stringify(k)); } catch (e) {} }
+  function clearKeys() { try { localStorage.removeItem(KEY_STORE); } catch (e) {} }
+
+  function show(name) {
+    ['setup', 'auth', 'profile'].forEach(function (s) { $('screen-' + s).hidden = (s !== name); });
+    $('btn-reset').hidden = (name === 'setup');
+  }
+  function say(id, text, kind) {
+    var el = $(id);
+    el.textContent = text || '';
+    el.className = 'msg' + (kind ? ' ' + kind : '');
+  }
+  function busy(btn, on, label) {
+    btn.disabled = on;
+    if (label) btn.textContent = on ? 'Please wait...' : label;
+  }
+  function friendly(err) {
+    var m = (err && err.message) || 'Something went wrong.';
+    if (/failed to fetch|network/i.test(m)) return 'Could not reach Supabase. Check your internet and that the Project URL is right.';
+    return m;
+  }
+
+  // ---------- setup ----------
+  $('sql-text').textContent = SQL;
+  $('btn-copy-sql').addEventListener('click', function () {
+    function ok() { say('msg-copy', 'Copied', 'ok'); }
+    function fallback() {
+      var r = document.createRange();
+      r.selectNodeContents($('sql-text'));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      say('msg-copy', 'Selected. Long-press and tap Copy.', '');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(SQL).then(ok, fallback);
+    } else { fallback(); }
+  });
+
+  $('btn-connect').addEventListener('click', function () {
+    var url = $('in-url').value.trim().replace(/\/+$/, '');
+    var key = $('in-key').value.trim();
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) {
+      return say('msg-setup', 'The Project URL should look like https://abcdxyz.supabase.co', 'err');
+    }
+    if (key.length < 30) {
+      return say('msg-setup', 'That key looks too short. Copy the whole anon public key.', 'err');
+    }
+    saveKeys({ url: url, key: key });
+    say('msg-setup', '');
+    start();
+  });
+
+  $('btn-reset').addEventListener('click', function () {
+    if (db) { db.auth.signOut().catch(function () {}); }
+    clearKeys();
+    db = null;
+    $('in-url').value = ''; $('in-key').value = '';
+    show('setup');
+  });
+
+  // ---------- auth ----------
+  function setMode(m) {
+    mode = m;
+    $('wrap-username').hidden = (m !== 'signup');
+    $('btn-auth').textContent = m === 'login' ? 'Log in' : 'Create account';
+    $('btn-switch').textContent = m === 'login' ? 'New here? Create an account' : 'Already have an account? Log in';
+    $('in-password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    say('msg-auth', '');
+  }
+  $('btn-switch').addEventListener('click', function () { setMode(mode === 'login' ? 'signup' : 'login'); });
+
+  $('form-auth').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = $('in-email').value.trim();
+    var pass = $('in-password').value;
+    if (!email || !pass) return say('msg-auth', 'Enter your email and password.', 'err');
+
+    var label = mode === 'login' ? 'Log in' : 'Create account';
+    var p;
+    if (mode === 'signup') {
+      var uname = $('in-username').value.trim().toLowerCase();
+      if (!/^[a-z0-9_]{3,20}$/.test(uname)) return say('msg-auth', 'Username: 3 to 20 letters, numbers or underscores.', 'err');
+      if (pass.length < 6) return say('msg-auth', 'Password needs at least 6 characters.', 'err');
+      p = db.auth.signUp({ email: email, password: pass, options: { data: { username: uname } } });
+    } else {
+      p = db.auth.signInWithPassword({ email: email, password: pass });
+    }
+    busy($('btn-auth'), true, label);
+    say('msg-auth', '');
+    p.then(function (res) {
+      if (res.error) throw res.error;
+      if (mode === 'signup' && !res.data.session) {
+        say('msg-auth', 'Check your email for a confirmation link, then log in.', 'ok');
+        setMode('login');
+        say('msg-auth', 'Check your email for a confirmation link, then log in.', 'ok');
+      }
+      // when a session exists, onAuthStateChange moves us to the profile
+    }).catch(function (err) {
+      say('msg-auth', friendly(err), 'err');
+    }).then(function () { busy($('btn-auth'), false, mode === 'login' ? 'Log in' : 'Create account'); });
+  });
+
+  // ---------- profile ----------
+  function paintHandle() {
+    var u = $('p-username').value.trim().toLowerCase();
+    $('handle').textContent = '@' + u;
+    $('avatar').textContent = (u || '?').charAt(0).toUpperCase();
+  }
+  $('p-username').addEventListener('input', paintHandle);
+
+  function loadProfile(uid) {
+    userId = uid;
+    show('profile');
+    say('msg-profile', 'Loading...', '');
+    db.from('profiles').select('username, full_name, bio').eq('id', uid).maybeSingle()
+      .then(function (res) {
+        if (res.error) throw res.error;
+        if (!res.data) {
+          say('msg-profile', 'No profile found. Run the database SQL in Supabase first, then sign up again.', 'err');
+          return;
+        }
+        $('p-username').value = res.data.username || '';
+        $('p-name').value = res.data.full_name || '';
+        $('p-bio').value = res.data.bio || '';
+        paintHandle();
+        say('msg-profile', '');
+      })
+      .catch(function (err) { say('msg-profile', friendly(err), 'err'); });
+  }
+
+  $('form-profile').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var uname = $('p-username').value.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(uname)) return say('msg-profile', 'Username: 3 to 20 letters, numbers or underscores.', 'err');
+    busy($('btn-save'), true, 'Save profile');
+    db.from('profiles').update({
+      username: uname,
+      full_name: $('p-name').value.trim(),
+      bio: $('p-bio').value.trim()
+    }).eq('id', userId).select('id')
+      .then(function (res) {
+        if (res.error) {
+          if (res.error.code === '23505') throw new Error('That username is taken. Try another.');
+          throw res.error;
+        }
+        if (!res.data || !res.data.length) throw new Error('Nothing was saved. Check the database SQL was run.');
+        $('p-username').value = uname;
+        paintHandle();
+        say('msg-profile', 'Saved', 'ok');
+      })
+      .catch(function (err) { say('msg-profile', friendly(err), 'err'); })
+      .then(function () { busy($('btn-save'), false, 'Save profile'); });
+  });
+
+  $('btn-logout').addEventListener('click', function () { db.auth.signOut(); });
+
+  // ---------- boot ----------
+  function start() {
+    var keys = loadKeys();
+    if (!keys) { show('setup'); return; }
+    if (!window.supabase || !window.supabase.createClient) {
+      show('setup');
+      say('msg-setup', 'Could not load the Supabase library. Check your internet and reload.', 'err');
+      return;
+    }
+    db = window.supabase.createClient(keys.url, keys.key);
+    db.auth.onAuthStateChange(function (_event, session) {
+      if (session && session.user) { loadProfile(session.user.id); }
+      else { show('auth'); }
+    });
+    db.auth.getSession().then(function (res) {
+      if (!res.data.session) show('auth');
+    });
+  }
+
+  setMode('login');
+  start();
+})();
+</script>
+</body>
+</html>
